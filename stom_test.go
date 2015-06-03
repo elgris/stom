@@ -207,14 +207,14 @@ func doTest(t *testing.T, items []SomeItem, expecteds []map[string]interface{}) 
 	}
 
 	for i, set := range items {
-		m := ToMap(set.Item)
+		m := ToMap(set)
 
 		for key, expected := range expecteds[i] {
 			actual, ok := m[key]
 			if !ok {
 				t.Fatalf("could not find key %s in map:\n%v\nexpected map:\n%v", key, actual, m)
 			}
-			assert.Equal(t, v, m[k])
+			assert.Equal(t, expected, actual)
 		}
 	}
 }
@@ -290,7 +290,7 @@ func BenchmarkManyTags_DefaultPolicy1(b *testing.B) {
 func doBenchmark(b *testing.B, item SomeItem) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		ToMap(set.Item)
+		ToMap(item)
 	}
 }
 
