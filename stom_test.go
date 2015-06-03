@@ -31,7 +31,10 @@ type testSet struct {
 }
 
 func TestDefaultTag_DefaultPolicy_DefaultValue(t *testing.T) {
+	SetTags("db")
 	SetDefault("DEFAULT")
+	SetPolicy(PolicyUseDefault)
+
 	expecteds := []map[string]interface{}{
 		map[string]interface{}{
 			"id":       1,
@@ -65,7 +68,10 @@ func TestDefaultTag_DefaultPolicy_DefaultValue(t *testing.T) {
 }
 
 func TestDefaultTag_DefaultPolicy_NilValue(t *testing.T) {
+	SetTags("db")
 	SetDefault(nil)
+	SetPolicy(PolicyUseDefault)
+
 	expecteds := []map[string]interface{}{
 		map[string]interface{}{
 			"id":       1,
@@ -99,6 +105,7 @@ func TestDefaultTag_DefaultPolicy_NilValue(t *testing.T) {
 }
 
 func TestDefaultTag_ExcludePolicy(t *testing.T) {
+	SetTags("db")
 	SetPolicy(PolicyExclude)
 	SetDefault("SomeDefault")
 
@@ -127,13 +134,13 @@ func TestDefaultTag_ExcludePolicy(t *testing.T) {
 	}
 
 	doTest(t, getTestItems(), expecteds)
-
-	SetPolicy(PolicyUseDefault)
 }
 
 func TestCustomTag_DefaultPolicy_DefaultValue(t *testing.T) {
 	SetTags("custom_tag")
 	SetDefault("SomeDefault")
+	SetPolicy(PolicyUseDefault)
+
 	expecteds := []map[string]interface{}{
 		map[string]interface{}{
 			"id":           1,
@@ -162,6 +169,7 @@ func TestManyTags_ExcludePolicy_DefaultValue(t *testing.T) {
 	SetPolicy(PolicyExclude)
 	SetTags("db", "custom_tag")
 	SetDefault("SomeDefault")
+
 	expecteds := []map[string]interface{}{
 		map[string]interface{}{
 			"id":           1,
@@ -189,8 +197,6 @@ func TestManyTags_ExcludePolicy_DefaultValue(t *testing.T) {
 	}
 
 	doTest(t, getTestItems(), expecteds)
-
-	SetPolicy(PolicyUseDefault)
 }
 
 func doTest(t *testing.T, items []SomeItem, expecteds []map[string]interface{}) {
@@ -210,6 +216,81 @@ func doTest(t *testing.T, items []SomeItem, expecteds []map[string]interface{}) 
 			}
 			assert.Equal(t, v, m[k])
 		}
+	}
+}
+
+func BenchmarkDefaultPolicy_DefaultValue0(b *testing.B) {
+	SetPolicy(PolicyUseDefault)
+	SetTags("db")
+	SetDefault("SomeDefault")
+
+	items := getTestItems()
+	doBenchmark(b, items[0])
+}
+func BenchmarkDefaultPolicy_DefaultValue1(b *testing.B) {
+	SetPolicy(PolicyUseDefault)
+	SetTags("db")
+	SetDefault("SomeDefault")
+
+	items := getTestItems()
+	doBenchmark(b, items[1])
+}
+
+func BenchmarkExcludePolicy0(b *testing.B) {
+	SetPolicy(PolicyExclude)
+	SetTags("db")
+	SetDefault("SomeDefault")
+
+	items := getTestItems()
+	doBenchmark(b, items[0])
+}
+func BenchmarkExcludePolicy1(b *testing.B) {
+	SetPolicy(PolicyExclude)
+	SetTags("db")
+	SetDefault("SomeDefault")
+
+	items := getTestItems()
+	doBenchmark(b, items[1])
+}
+
+func BenchmarkManyTags_ExcludePolicy0(b *testing.B) {
+	SetPolicy(PolicyExclude)
+	SetTags("db", "custom_tag")
+	SetDefault("SomeDefault")
+
+	items := getTestItems()
+	doBenchmark(b, items[0])
+}
+func BenchmarkManyTags_ExcludePolicy1(b *testing.B) {
+	SetPolicy(PolicyExclude)
+	SetTags("db", "custom_tag")
+	SetDefault("SomeDefault")
+
+	items := getTestItems()
+	doBenchmark(b, items[1])
+}
+
+func BenchmarkManyTags_DefaultPolicy0(b *testing.B) {
+	SetPolicy(PolicyUseDefault)
+	SetTags("db", "custom_tag")
+	SetDefault("SomeDefault")
+
+	items := getTestItems()
+	doBenchmark(b, items[0])
+}
+func BenchmarkManyTags_DefaultPolicy1(b *testing.B) {
+	SetPolicy(PolicyUseDefault)
+	SetTags("db", "custom_tag")
+	SetDefault("SomeDefault")
+
+	items := getTestItems()
+	doBenchmark(b, items[1])
+}
+
+func doBenchmark(b *testing.B, item SomeItem) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		ToMap(set.Item)
 	}
 }
 
