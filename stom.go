@@ -16,9 +16,9 @@ const (
 
 // package settings
 var (
-	tag          string      = "db"
-	policy       Policy      = PolicyUseDefault
-	defaultValue interface{} = nil
+	tagSetting          string      = "db"
+	policySetting       Policy      = PolicyUseDefault
+	defaultValueSetting interface{} = nil
 )
 
 type ToMappable interface {
@@ -46,17 +46,17 @@ func MustNewStom(s interface{}) *stom {
 
 	stom := &stom{
 		typ:          typ,
-		defaultValue: defaultValue,
-		policy:       policy,
+		defaultValue: defaultValueSetting,
+		policy:       policySetting,
 	}
-	return stom.SetTag(tag)
+	stom.SetTag(tagSetting)
+
+	return stom
 }
 
-func (this *stom) SetTag(tag string) *stom {
+func (this *stom) SetTag(tag string) {
 	this.tag = tag
 	this.cache = extractTagValues(this.typ, this.tag)
-
-	return this
 }
 func (this *stom) SetDefault(defaultValue interface{}) { this.defaultValue = defaultValue }
 func (this *stom) SetPolicy(policy Policy)             { this.policy = policy }
@@ -72,12 +72,12 @@ func (this *stom) ToMap(s interface{}) (map[string]interface{}, error) {
 		return nil, errors.New(fmt.Sprintf("stom is set up to work with type %s, but %s given", this.typ, typ))
 	}
 
-	return toMap(s, this.cache)
+	return toMap(s, this.cache, this.tag, this.defaultValue, this.policy)
 }
 
-func SetTag(t string)           { tag = t }
-func SetDefault(dv interface{}) { defaultValue = dv }
-func SetPolicy(p Policy)        { policy = p }
+func SetTag(t string)           { tagSetting = t }
+func SetDefault(dv interface{}) { defaultValueSetting = dv }
+func SetPolicy(p Policy)        { policySetting = p }
 
 func ToMap(s interface{}) (map[string]interface{}, error) {
 	if tomappable, ok := s.(ToMappable); ok {
@@ -90,9 +90,9 @@ func ToMap(s interface{}) (map[string]interface{}, error) {
 		return nil, errors.New(fmt.Sprintf("expected struct, got %v", typ.Kind()))
 	}
 
-	tagmap := extractTagValues(typ, tag)
+	tagmap := extractTagValues(typ, tagSetting)
 
-	return toMap(s, tagmap)
+	return toMap(s, tagmap, tagSetting, defaultValueSetting, policySetting)
 }
 
 func getStructType(s interface{}) (t reflect.Type, err error) {
@@ -119,7 +119,7 @@ func extractTagValues(typ reflect.Type, tag string) map[string]int {
 			continue
 		}
 
-		if tagValue := field.Tag.Get(tag); tagValue != "" && tagValue != "-" {
+		if tagValue := field.Tag.Get(tagSetting); tagValue != "" && tagValue != "-" {
 			tagValues[tagValue] = i
 		}
 	}
@@ -127,7 +127,7 @@ func extractTagValues(typ reflect.Type, tag string) map[string]int {
 	return tagValues
 }
 
-func toMap(s interface{}, tagmap map[string]int) (map[string]interface{}, error) {
+func toMap(s interface{}, tagmap map[string]int, tag string, defaultValue interface{}, policy Policy) (map[string]interface{}, error) {
 	val := reflect.ValueOf(s)
 
 	result := map[string]interface{}{}
