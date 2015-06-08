@@ -85,12 +85,11 @@ func (this *stom) SetPolicy(policy Policy) { this.policy = policy }
 // ToMap converts a structure to map[string]interface{}.
 // SToM converts only structures it was initialized for
 func (this *stom) ToMap(s interface{}) (map[string]interface{}, error) {
-	val := reflect.ValueOf(s)
-	if val.Kind() == reflect.Ptr {
-		s = val.Elem().Interface()
+	typ, err := getStructType(s)
+	if err != nil {
+		return nil, err
 	}
 
-	typ := reflect.TypeOf(s)
 	if typ != this.typ {
 		return nil, errors.New(fmt.Sprintf("stom is set up to work with type %s, but %s given", this.typ, typ))
 	}
@@ -117,18 +116,9 @@ func ToMap(s interface{}) (map[string]interface{}, error) {
 		return tomappable.ToMap()
 	}
 
-	typ := reflect.TypeOf(s)
-
-	if typ.Kind() == reflect.Ptr {
-		typ = typ.Elem()
-	}
-
-	if typ.Kind() != reflect.Struct {
-		return nil, errors.New(fmt.Sprintf("expected struct, got %v", typ.Kind()))
-	}
-
-	if typ.Kind() == reflect.Invalid {
-		return nil, errors.New(fmt.Sprintf("value is invalid:\n %v", s))
+	typ, err := getStructType(s)
+	if err != nil {
+		return nil, err
 	}
 
 	tagmap := extractTagValues(typ, tagSetting)
@@ -139,13 +129,17 @@ func ToMap(s interface{}) (map[string]interface{}, error) {
 func getStructType(s interface{}) (t reflect.Type, err error) {
 	t = reflect.TypeOf(s)
 
+	if t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+
 	if t.Kind() == reflect.Invalid {
 		err = errors.New(fmt.Sprintf("value is invalid:\n %v", s))
 		return
 	}
 
 	if t.Kind() != reflect.Struct {
-		err = errors.New(fmt.Sprintf("provided value is not a struct!\n%v", s))
+		err = errors.New(fmt.Sprintf("provided value is not a struct but %v!", t.Kind()))
 	}
 
 	return
