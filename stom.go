@@ -119,8 +119,16 @@ func ToMap(s interface{}) (map[string]interface{}, error) {
 
 	typ := reflect.TypeOf(s)
 
+	if typ.Kind() == reflect.Ptr {
+		typ = typ.Elem()
+	}
+
 	if typ.Kind() != reflect.Struct {
 		return nil, errors.New(fmt.Sprintf("expected struct, got %v", typ.Kind()))
+	}
+
+	if typ.Kind() == reflect.Invalid {
+		return nil, errors.New(fmt.Sprintf("value is invalid:\n %v", s))
 	}
 
 	tagmap := extractTagValues(typ, tagSetting)
@@ -165,6 +173,10 @@ func extractTagValues(typ reflect.Type, tag string) map[string]int {
 
 func toMap(s interface{}, tagmap map[string]int, tag string, defaultValue interface{}, policy Policy) (map[string]interface{}, error) {
 	val := reflect.ValueOf(s)
+
+	if val.Kind() == reflect.Ptr {
+		val = val.Elem()
+	}
 
 	result := map[string]interface{}{}
 
