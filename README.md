@@ -52,7 +52,7 @@ func main() {
 ```
 
 ## Benchmarks
-TBD
+https://github.com/elgris/struct-to-map-conversion-benchmark
 
 ## TODO
 - support anonymous fields
