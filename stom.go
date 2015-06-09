@@ -110,8 +110,8 @@ func SetDefault(dv interface{}) { defaultValueSetting = dv }
 // - PolicyExclude    - 'nil' values will be discarded
 func SetPolicy(p Policy) { policySetting = p }
 
-// ToMap converts given structure into map[string]interface{}
-func ToMap(s interface{}) (map[string]interface{}, error) {
+// ConvertToMap converts given structure into map[string]interface{}
+func ConvertToMap(s interface{}) (map[string]interface{}, error) {
 	if tomappable, ok := s.(ToMappable); ok {
 		return tomappable.ToMap()
 	}

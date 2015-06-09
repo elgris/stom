@@ -41,6 +41,6 @@ func BenchmarkExcludePolicy1(b *testing.B) {
 func doBenchmark(b *testing.B, item SomeItem) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		ToMap(item)
+		ConvertToMap(item)
 	}
 }

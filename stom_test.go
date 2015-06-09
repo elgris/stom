@@ -27,28 +27,6 @@ type SomeItem struct {
 	Notes           string
 }
 
-type BasicItem struct {
-	Base string `tomap:"base"`
-}
-
-type AnotherBasicItem struct {
-	AnotherBase string `tomap:"another_base"`
-}
-
-type ComplexItem struct {
-	SomeItem
-	BasicItem
-	AnotherBasicItem `tomap:"-"`
-	Author           sql.NullString `tomap:"author"`
-	Generation       uint32
-	Meta             struct {
-		Tag        string `tomap:"tag"`
-		Value      string `tomap:"-"`
-		SomeFlag   bool
-		Additional map[string]interface{} `tomap:"additional"`
-	}
-}
-
 func TestDefaultPolicy_DefaultValue(t *testing.T) {
 	SetTag("db")
 	SetDefault("DEFAULT")
@@ -194,7 +172,7 @@ func doTest(t *testing.T, items []SomeItem, expecteds []map[string]interface{}) 
 	}
 
 	for i, set := range items {
-		m, err := ToMap(set)
+		m, err := ConvertToMap(set)
 		if err != nil {
 			t.Fatalf("ToMap call returned error: %s", err.Error())
 		}
