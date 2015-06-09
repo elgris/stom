@@ -71,16 +71,26 @@ func MustNewStom(s interface{}) *stom {
 }
 
 // SetTag sets SToM to scan for given tag in structure
-func (this *stom) SetTag(tag string) {
+func (this *stom) SetTag(tag string) *stom {
 	this.tag = tag
 	this.cache = extractTagValues(this.typ, this.tag)
+
+	return this
 }
 
 // SetDefault makes SToM to put given default value in 'nil' values of structure's fields
-func (this *stom) SetDefault(defaultValue interface{}) { this.defaultValue = defaultValue }
+func (this *stom) SetDefault(defaultValue interface{}) *stom {
+	this.defaultValue = defaultValue
+
+	return this
+}
 
 // SetPolicy sets policy for 'nil' values
-func (this *stom) SetPolicy(policy Policy) { this.policy = policy }
+func (this *stom) SetPolicy(policy Policy) *stom {
+	this.policy = policy
+
+	return this
+}
 
 // ToMap converts a structure to map[string]interface{}.
 // SToM converts only structures it was initialized for
