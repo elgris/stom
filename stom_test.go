@@ -27,6 +27,99 @@ type SomeItem struct {
 	Notes           string
 }
 
+type BasicItem struct {
+	Base   string         `tomap:"base"`
+	Posted mysql.NullTime `tomap:"basic_posted"`
+}
+
+type AnotherBasicItem struct {
+	AnotherBase string `tomap:"another_base"`
+}
+
+type ComplexItem struct {
+	SomeItem
+	BasicItem
+	AnotherBasicItem `tomap:"-"`
+	Author           sql.NullString `tomap:"author"`
+	Generation       uint32
+	Meta             struct {
+		Tag        string        `tomap:"tag"`
+		Value      string        `tomap:"-"`
+		MaybeValue sql.NullInt64 `tomap:"value"`
+		SomeFlag   bool
+		Additional map[string]interface{} `tomap:"additional"`
+	}
+}
+
+func TestComplexItem_DefaultPolicy(t *testing.T) {
+	SetTag("meta")
+	SetDefault("DEFAULT")
+	SetPolicy(PolicyUseDefault)
+
+	expected := map[string]interface{}{
+		"id":       1,
+		"name":     "item_1",
+		"number":   11,
+		"created":  time.Unix(10000, 0),
+		"updated":  mysql.NullTime{time.Unix(11000, 0), true},
+		"discount": 111.0,
+		"price":    1111.0,
+		"reserved": sql.NullBool{true, true},
+		"points":   "DEFAULT",
+		"rating":   sql.NullFloat64{1.0, true},
+		"visible":  true,
+
+		"base":         "base",
+		"basic_posted": "DEFAULT",
+
+		"author":     "DEFAULT",
+		"generation": 123,
+		"meta": map[string]interface{}{
+			"tag":   "metatag",
+			"value": 11,
+			"additional": map[string]interface{}{
+				"foo": 12,
+				"bar": sql.NullBool{true, false},
+			},
+		},
+	}
+
+	doTest(t, getTestComplexItem(), expected)
+}
+
+func TestComplexItem_ExcludePolicy(t *testing.T) {
+	SetTag("meta")
+	SetDefault("DEFAULT")
+	SetPolicy(PolicyExclude)
+
+	expected := map[string]interface{}{
+		"id":       1,
+		"name":     "item_1",
+		"number":   11,
+		"created":  time.Unix(10000, 0),
+		"updated":  mysql.NullTime{time.Unix(11000, 0), true},
+		"discount": 111.0,
+		"price":    1111.0,
+		"reserved": sql.NullBool{true, true},
+		"rating":   sql.NullFloat64{1.0, true},
+		"visible":  true,
+
+		"base": "base",
+
+		"generation": 123,
+		"meta": map[string]interface{}{
+			"tag":   "metatag",
+			"value": sql.NullInt64{int64(11), true},
+			"additional": map[string]interface{}{
+				"foo": 12,
+				"bar": sql.NullBool{true, false},
+			},
+		},
+	}
+
+	doTest(t, getTestComplexItem(), expected)
+}
+
 func TestDefaultPolicy_DefaultValue(t *testing.T) {
 	SetTag("db")
 	SetDefault("DEFAULT")
@@ -61,7 +154,7 @@ func TestDefaultPolicy_DefaultValue(t *testing.T) {
 		},
 	}
 
-	doTest(t, getTestItems(), expecteds)
+	doTestItems(t, getTestItems(), expecteds)
 }
 
 func TestDefaultPolicy_NilValue(t *testing.T) {
@@ -98,7 +191,7 @@ func TestDefaultPolicy_NilValue(t *testing.T) {
 		},
 	}
 
-	doTest(t, getTestItems(), expecteds)
+	doTestItems(t, getTestItems(), expecteds)
 }
 
 func TestExcludePolicy(t *testing.T) {
@@ -130,10 +223,10 @@ func TestExcludePolicy(t *testing.T) {
 		},
 	}
 
-	doTest(t, getTestItems(), expecteds)
+	doTestItems(t, getTestItems(), expecteds)
 }
 
-func TestCustomTag_DefaultPolicy_DefaultValue(t *testing.T) {
+func TestCustomTag_DefaultPolicy(t *testing.T) {
 	SetTag("custom_tag")
 	SetDefault("SomeDefault")
 	SetPolicy(PolicyUseDefault)
@@ -161,39 +254,43 @@ func TestCustomTag_DefaultPolicy_DefaultValue(t *testing.T) {
 		},
 	}
 
-	doTest(t, getTestItems(), expecteds)
+	doTestItems(t, getTestItems(), expecteds)
 }
 
-func doTest(t *testing.T, items []SomeItem, expecteds []map[string]interface{}) {
+func doTestItems(t *testing.T, items []SomeItem, expecteds []map[string]interface{}) {
 	if len(items) != len(expecteds) {
 		t.Fatalf("number of expected maps %d does not match number of actual items %d",
 			len(expecteds),
 			len(items))
 	}
 
-	for i, set := range items {
-		m, err := ConvertToMap(set)
-		if err != nil {
-			t.Fatalf("ToMap call returned error: %s", err.Error())
-		}
+	for i := range items {
+		doTest(t, items[i], expecteds[i])
+	}
+}
 
-		// TODO: maybe use just equal asserion here?
-		if len(m) != len(expecteds[i]) {
-			t.Fatalf("size of expected map %d\n%+v\ndoes not match size of generated map %d\n%+v",
-				len(expecteds[i]),
-				expecteds[i],
-				len(m),
-				m)
-		}
+func doTest(t *testing.T, item interface{}, expected map[string]interface{}) {
+	actual, err := ConvertToMap(item)
+	if err != nil {
+		t.Fatalf("ToMap call returned error: %s", err.Error())
+	}
 
-		for key, expected := range expecteds[i] {
-			actual, ok := m[key]
-			if !ok {
-				t.Fatalf("could not find key %s in map:\n%v\nexpected map:\n%v", key, m, expecteds[i])
-			}
-			if !assert.Equal(t, expected, actual) {
-				t.Fatalf("expected value by key %s is %v, got %v", key, expected, actual)
-			}
+	// TODO: maybe use just equal asserion here?
+	if len(actual) != len(expected) {
+		t.Fatalf("size of expected map %d\n%+v\ndoes not match size of generated map %d\n%+v",
+			len(expected),
+			expected,
+			len(actual),
+			actual)
+	}
+
+	for key, e := range expected {
+		a, ok := actual[key]
+		if !ok {
+			t.Fatalf("could not find key %s in map:\n%v\nexpected map:\n%v", key, actual, expected)
+		}
+		if !assert.Equal(t, e, a) {
+			t.Fatalf("expected value by key %s is %v, got %v", key, e, a)
 		}
 	}
 }
@@ -234,4 +331,46 @@ func getTestItems() []SomeItem {
 			SomeIgnoreField: 20,
 		},
 	}
+}
+
+func getTestComplexItem() ComplexItem {
+	discount := 111.0
+	item := ComplexItem{
+		SomeItem: SomeItem{
+			ID:              1,
+			Name:            "item_1",
+			Number:          11,
+			Checksum:        111,
+			Created:         time.Unix(10000, 0),
+			Updated:         mysql.NullTime{time.Unix(11000, 0), true},
+			Price:           1111.0,
+			Discount:        &discount,
+			IsReserved:      sql.NullBool{true, true},
+			Points:          sql.NullInt64{int64(11), false},
+			Rating:          sql.NullFloat64{1.0, true},
+			IsVisible:       true,
+			Notes:           "foo",
+			SomeIgnoreField: 10,
+		},
+		BasicItem: BasicItem{
+			Base:   "base",
+			Posted: mysql.NullTime{time.Now(), false},
+		},
+		AnotherBasicItem: AnotherBasicItem{
+			AnotherBase: "anotherBase",
+		},
+		Author:     sql.NullString{"invalid_author", false},
+		Generation: 123,
+	}
+
+	item.Meta.Tag = "metatag"
+	item.Meta.Value = "ignoredValue"
+	item.Meta.MaybeValue = sql.NullInt64{int64(11), true}
+	item.Meta.SomeFlag = true
+	item.Meta.Additional = map[string]interface{}{
+		"foo": 12,
+		"bar": sql.NullBool{true, false},
+	}
+
+	return item
 }
