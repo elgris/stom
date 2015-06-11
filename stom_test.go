@@ -27,32 +27,47 @@ type SomeItem struct {
 	Notes           string
 }
 
+type ParentItem struct {
+	Base string `db:"base"`
+}
+
 type BasicItem struct {
-	Base   string         `tomap:"base"`
-	Posted mysql.NullTime `tomap:"basic_posted"`
+	*ParentItem
+	Posted mysql.NullTime `db:"basic_posted"`
 }
 
 type AnotherBasicItem struct {
-	AnotherBase string `tomap:"another_base"`
+	AnotherBase string `db:"another_base"`
+}
+
+type Metainfo struct {
+	Tag        string
+	Value      string
+	MaybeValue sql.NullInt64
+	SomeFlag   bool
+	Additional map[string]interface{}
+}
+
+// ToMap implements ToMappable interface to be used by SToM
+func (this Metainfo) ToMap() (map[string]interface{}, error) {
+	return map[string]interface{}{
+		"tag":   this.Tag,
+		"value": this.Value,
+		"add":   this.Additional,
+	}, nil
 }
 
 type ComplexItem struct {
 	SomeItem
-	BasicItem
-	AnotherBasicItem `tomap:"-"`
-	Author           sql.NullString `tomap:"author"`
+	*BasicItem
+	AnotherBasicItem `db:"-"`
+	Author           sql.NullString `db:"author"`
 	Generation       uint32
-	Meta             struct {
-		Tag        string        `tomap:"tag"`
-		Value      string        `tomap:"-"`
-		MaybeValue sql.NullInt64 `tomap:"value"`
-		SomeFlag   bool
-		Additional map[string]interface{} `tomap:"additional"`
-	}
+	Meta             Metainfo `db:"meta"`
 }
 
 func TestComplexItem_DefaultPolicy(t *testing.T) {
-	SetTag("meta")
+	SetTag("db")
 	SetDefault("DEFAULT")
 	SetPolicy(PolicyUseDefault)
 
@@ -72,12 +87,11 @@ func TestComplexItem_DefaultPolicy(t *testing.T) {
 		"base":         "base",
 		"basic_posted": "DEFAULT",
 
-		"author":     "DEFAULT",
-		"generation": 123,
+		"author": "DEFAULT",
 		"meta": map[string]interface{}{
 			"tag":   "metatag",
-			"value": 11,
-			"additional": map[string]interface{}{
+			"value": "valvalval",
+			"add": map[string]interface{}{
 				"foo": 12,
 				"bar": sql.NullBool{true, false},
 			},
@@ -88,7 +102,7 @@ func TestComplexItem_DefaultPolicy(t *testing.T) {
 }
 
 func TestComplexItem_ExcludePolicy(t *testing.T) {
-	SetTag("meta")
+	SetTag("db")
 	SetDefault("DEFAULT")
 	SetPolicy(PolicyExclude)
 
@@ -106,11 +120,10 @@ func TestComplexItem_ExcludePolicy(t *testing.T) {
 
 		"base": "base",
 
-		"generation": 123,
 		"meta": map[string]interface{}{
 			"tag":   "metatag",
-			"value": sql.NullInt64{int64(11), true},
-			"additional": map[string]interface{}{
+			"value": "valvalval",
+			"add": map[string]interface{}{
 				"foo": 12,
 				"bar": sql.NullBool{true, false},
 			},
@@ -290,7 +303,7 @@ func doTest(t *testing.T, item interface{}, expected map[string]interface{}) {
 			t.Fatalf("could not find key %s in map:\n%v\nexpected map:\n%v", key, actual, expected)
 		}
 		if !assert.Equal(t, e, a) {
-			t.Fatalf("expected value by key %s is %v, got %v", key, e, a)
+			t.Fatalf("expected value by key %s is:\n %#v\ngot:\n %#v", key, e, a)
 		}
 	}
 }
@@ -352,9 +365,9 @@ func getTestComplexItem() ComplexItem {
 			Notes:           "foo",
 			SomeIgnoreField: 10,
 		},
-		BasicItem: BasicItem{
-			Base:   "base",
-			Posted: mysql.NullTime{time.Now(), false},
+		BasicItem: &BasicItem{
+			ParentItem: &ParentItem{Base: "base"},
+			Posted:     mysql.NullTime{time.Now(), false},
 		},
 		AnotherBasicItem: AnotherBasicItem{
 			AnotherBase: "anotherBase",
@@ -364,7 +377,7 @@ func getTestComplexItem() ComplexItem {
 	}
 
 	item.Meta.Tag = "metatag"
-	item.Meta.Value = "ignoredValue"
+	item.Meta.Value = "valvalval"
 	item.Meta.MaybeValue = sql.NullInt64{int64(11), true}
 	item.Meta.SomeFlag = true
 	item.Meta.Additional = map[string]interface{}{

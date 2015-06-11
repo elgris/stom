@@ -41,6 +41,18 @@ type ToMapper interface {
 	ToMap(s interface{}) (map[string]interface{}, error)
 }
 
+type tags struct {
+	Simple map[int]string
+	Nested map[int]tags
+}
+
+func newTags() tags {
+	return tags{
+		Simple: make(map[int]string),
+		Nested: make(map[int]tags),
+	}
+}
+
 // stom is a small handy tool that is instantiated for certain type and caches
 // all knowledge about this type to increase conversion speed
 type stom struct {
@@ -49,7 +61,7 @@ type stom struct {
 	tag          string
 
 	typ   reflect.Type
-	cache map[string]int
+	cache tags
 }
 
 // MustNewStom creates new instance of a SToM converter for type of given structure.
@@ -104,7 +116,7 @@ func (this *stom) ToMap(s interface{}) (map[string]interface{}, error) {
 		return nil, errors.New(fmt.Sprintf("stom is set up to work with type %s, but %s given", this.typ, typ))
 	}
 
-	return toMap(s, this.cache, this.tag, this.defaultValue, this.policy)
+	return toMap(s, this.cache, this.defaultValue, this.policy)
 }
 
 // SetTag sets package setting for tag to look for in incoming structures
@@ -133,7 +145,7 @@ func ConvertToMap(s interface{}) (map[string]interface{}, error) {
 
 	tagmap := extractTagValues(typ, tagSetting)
 
-	return toMap(s, tagmap, tagSetting, defaultValueSetting, policySetting)
+	return toMap(s, tagmap, defaultValueSetting, policySetting)
 }
 
 func getStructType(s interface{}) (t reflect.Type, err error) {
@@ -158,24 +170,31 @@ func getStructType(s interface{}) (t reflect.Type, err error) {
 // extractTagValues scans given type and tries to find all fields with given tag
 // Indices of all found fields are stored as values in resulting map
 // Keys of resulting map are actual values of tags
-func extractTagValues(typ reflect.Type, tag string) map[string]int {
-	tagValues := map[string]int{}
+func extractTagValues(typ reflect.Type, tag string) tags {
+	if typ.Kind() == reflect.Ptr {
+		typ = typ.Elem()
+	}
+	tagValues := newTags()
 
 	for i := 0; i < typ.NumField(); i++ {
 		field := typ.Field(i)
-		if field.PkgPath != "" { // unexported
+		tagValue := field.Tag.Get(tagSetting)
+
+		if field.Anonymous && tagValue != "-" {
+			tagValues.Nested[i] = extractTagValues(field.Type, tag)
 			continue
 		}
 
-		if tagValue := field.Tag.Get(tagSetting); tagValue != "" && tagValue != "-" {
-			tagValues[tagValue] = i
+		if tagValue != "" && tagValue != "-" && field.PkgPath == "" { // exported
+			tagValues.Simple[i] = tagValue
 		}
+
 	}
 
 	return tagValues
 }
 
-func toMap(s interface{}, tagmap map[string]int, tag string, defaultValue interface{}, policy Policy) (map[string]interface{}, error) {
+func toMap(s interface{}, tagmap tags, defaultValue interface{}, policy Policy) (map[string]interface{}, error) {
 	val := reflect.ValueOf(s)
 
 	if val.Kind() == reflect.Ptr {
@@ -184,10 +203,11 @@ func toMap(s interface{}, tagmap map[string]int, tag string, defaultValue interf
 
 	result := map[string]interface{}{}
 
-	for tag, index := range tagmap {
+	for index, tag := range tagmap.Simple {
 		vField := val.Field(index)
 
 		v, err := filterValue(vField)
+
 		if err != nil {
 			return result, err
 		}
@@ -198,6 +218,17 @@ func toMap(s interface{}, tagmap map[string]int, tag string, defaultValue interf
 			result[tag] = defaultValue
 		}
 
+	}
+
+	for index, tags := range tagmap.Nested {
+		vField := val.Field(index)
+		valueMap, err := toMap(vField.Interface(), tags, defaultValue, policy)
+		if err != nil {
+			return result, err
+		}
+		for k, v := range valueMap {
+			result[k] = v
+		}
 	}
 
 	return result, nil

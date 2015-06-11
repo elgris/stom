@@ -55,11 +55,9 @@ func main() {
 https://github.com/elgris/struct-to-map-conversion-benchmark
 
 ## TODO
-- support anonymous fields
-- support field slices
-- support filter plugins (???)
+- (???) support filter plugins (???)
 - setup travis
-- generate godoc and put link in doc
+- generate godoc and put link to doc
 
 ## License
 MIT
