@@ -1,8 +1,5 @@
 # SToM: Structure To Map converter (yet another one)
 
-## WARNING!
-SToM is not supporting nested structs. Stay tuned, it will be fixed soon! :)
-
 ## What is it?
 Little handy tool to convert your structures into `map[string]interface{}`. It works in 2 modes:
 1. General mode. It's when you use exported method `ToMap` to convert arbitrary struct instance to map.

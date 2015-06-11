@@ -2,11 +2,11 @@ package stom
 
 import (
 	"database/sql/driver"
-	"errors"
 	"fmt"
 	"reflect"
 )
 
+// Policy is a type to define policy of dealing with 'nil' values
 type Policy uint8
 
 const (
@@ -23,9 +23,9 @@ const (
 // Package settings
 // They are used as defaults for initialization if new SToMs
 var (
-	tagSetting          string      = "db"
-	policySetting       Policy      = PolicyUseDefault
-	defaultValueSetting interface{} = nil
+	tagSetting          = "db"
+	policySetting       = PolicyUseDefault
+	defaultValueSetting interface{}
 )
 
 // ToMappable defines an entity that knows how to convert itself to map[string]interface{}.
@@ -113,7 +113,7 @@ func (this *stom) ToMap(s interface{}) (map[string]interface{}, error) {
 	}
 
 	if typ != this.typ {
-		return nil, errors.New(fmt.Sprintf("stom is set up to work with type %s, but %s given", this.typ, typ))
+		return nil, fmt.Errorf("stom is set up to work with type %s, but %s given", this.typ, typ)
 	}
 
 	return toMap(s, this.cache, this.defaultValue, this.policy)
@@ -156,12 +156,12 @@ func getStructType(s interface{}) (t reflect.Type, err error) {
 	}
 
 	if t.Kind() == reflect.Invalid {
-		err = errors.New(fmt.Sprintf("value is invalid:\n %v", s))
+		err = fmt.Errorf("value is invalid:\n %v", s)
 		return
 	}
 
 	if t.Kind() != reflect.Struct {
-		err = errors.New(fmt.Sprintf("provided value is not a struct but %v!", t.Kind()))
+		err = fmt.Errorf("provided value is not a struct but %v", t.Kind())
 	}
 
 	return
