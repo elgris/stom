@@ -1,3 +1,5 @@
+// package stom is about converting structs to map[string]interface{} with
+// minimum processing and overhead
 package stom
 
 import (
@@ -39,6 +41,14 @@ type ToMappable interface {
 // ToMapper defines a service that is able to convert something to map[string]interface{}
 type ToMapper interface {
 	ToMap(s interface{}) (map[string]interface{}, error)
+}
+
+// ToMapperFunc defines a function that implements ToMapper
+type ToMapperFunc func(s interface{}) (map[string]interface{}, error)
+
+// ToMap implements ToMapper
+func (this ToMapperFunc) ToMap(s interface{}) (map[string]interface{}, error) {
+	return this(s)
 }
 
 type tags struct {
@@ -178,7 +188,7 @@ func extractTagValues(typ reflect.Type, tag string) tags {
 
 	for i := 0; i < typ.NumField(); i++ {
 		field := typ.Field(i)
-		tagValue := field.Tag.Get(tagSetting)
+		tagValue := field.Tag.Get(tag)
 
 		if field.Anonymous && tagValue != "-" {
 			tagValues.Nested[i] = extractTagValues(field.Type, tag)

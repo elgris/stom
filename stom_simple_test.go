@@ -1,10 +1,11 @@
-package stom
+package stom_test
 
 import (
 	"database/sql"
 	"testing"
 	"time"
 
+	"github.com/elgris/stom"
 	"github.com/go-sql-driver/mysql"
 	"github.com/stretchr/testify/assert"
 )
@@ -28,9 +29,9 @@ type SomeItem struct {
 }
 
 func TestDefaultPolicy_DefaultValue(t *testing.T) {
-	SetTag("db")
-	SetDefault("DEFAULT")
-	SetPolicy(PolicyUseDefault)
+	stom.SetTag("db")
+	stom.SetDefault("DEFAULT")
+	stom.SetPolicy(stom.PolicyUseDefault)
 
 	expecteds := []map[string]interface{}{
 		map[string]interface{}{
@@ -61,13 +62,13 @@ func TestDefaultPolicy_DefaultValue(t *testing.T) {
 		},
 	}
 
-	doTestItems(t, getTestItems(), expecteds)
+	doTestItems(t, stom.ToMapperFunc(stom.ConvertToMap), getTestItems(), expecteds)
 }
 
 func TestDefaultPolicy_NilValue(t *testing.T) {
-	SetTag("db")
-	SetDefault(nil)
-	SetPolicy(PolicyUseDefault)
+	stom.SetTag("db")
+	stom.SetDefault(nil)
+	stom.SetPolicy(stom.PolicyUseDefault)
 
 	expecteds := []map[string]interface{}{
 		map[string]interface{}{
@@ -98,13 +99,13 @@ func TestDefaultPolicy_NilValue(t *testing.T) {
 		},
 	}
 
-	doTestItems(t, getTestItems(), expecteds)
+	doTestItems(t, stom.ToMapperFunc(stom.ConvertToMap), getTestItems(), expecteds)
 }
 
 func TestExcludePolicy(t *testing.T) {
-	SetTag("db")
-	SetPolicy(PolicyExclude)
-	SetDefault("SomeDefault")
+	stom.SetTag("db")
+	stom.SetPolicy(stom.PolicyExclude)
+	stom.SetDefault("SomeDefault")
 
 	expecteds := []map[string]interface{}{
 		map[string]interface{}{
@@ -130,13 +131,18 @@ func TestExcludePolicy(t *testing.T) {
 		},
 	}
 
-	doTestItems(t, getTestItems(), expecteds)
+	doTestItems(t, stom.ToMapperFunc(stom.ConvertToMap), getTestItems(), expecteds)
 }
 
-func TestCustomTag_DefaultPolicy(t *testing.T) {
-	SetTag("custom_tag")
-	SetDefault("SomeDefault")
-	SetPolicy(PolicyUseDefault)
+func TestToMapper_CustomTag_DefaultPolicy(t *testing.T) {
+	stom.SetTag("db")
+	stom.SetPolicy(stom.PolicyExclude)
+	stom.SetDefault("foo")
+
+	tomapper := stom.MustNewStom(SomeItem{}).
+		SetTag("custom_tag").
+		SetPolicy(stom.PolicyUseDefault).
+		SetDefault("SomeDefault")
 
 	expecteds := []map[string]interface{}{
 		map[string]interface{}{
@@ -161,10 +167,41 @@ func TestCustomTag_DefaultPolicy(t *testing.T) {
 		},
 	}
 
-	doTestItems(t, getTestItems(), expecteds)
+	doTestItems(t, tomapper, getTestItems(), expecteds)
 }
 
-func doTestItems(t *testing.T, items []SomeItem, expecteds []map[string]interface{}) {
+func TestCustomTag_DefaultPolicy(t *testing.T) {
+	stom.SetTag("custom_tag")
+	stom.SetDefault("SomeDefault")
+	stom.SetPolicy(stom.PolicyUseDefault)
+
+	expecteds := []map[string]interface{}{
+		map[string]interface{}{
+			"id":               1,
+			"num":              11,
+			"sum":              111,
+			"created_time":     time.Unix(10000, 0),
+			"updated_time":     mysql.NullTime{time.Unix(11000, 0), true},
+			"is_reserved":      sql.NullBool{true, true},
+			"visible":          true,
+			"i_ignore_nothing": 10,
+		},
+		map[string]interface{}{
+			"id":               2,
+			"num":              22,
+			"sum":              222,
+			"created_time":     time.Unix(20000, 0),
+			"updated_time":     "SomeDefault",
+			"is_reserved":      "SomeDefault",
+			"visible":          false,
+			"i_ignore_nothing": 20,
+		},
+	}
+
+	doTestItems(t, stom.ToMapperFunc(stom.ConvertToMap), getTestItems(), expecteds)
+}
+
+func doTestItems(t *testing.T, tomapper stom.ToMapper, items []SomeItem, expecteds []map[string]interface{}) {
 	if len(items) != len(expecteds) {
 		t.Fatalf("number of expected maps %d does not match number of actual items %d",
 			len(expecteds),
@@ -172,12 +209,12 @@ func doTestItems(t *testing.T, items []SomeItem, expecteds []map[string]interfac
 	}
 
 	for i := range items {
-		doTest(t, items[i], expecteds[i])
+		doTest(t, tomapper, items[i], expecteds[i])
 	}
 }
 
-func doTest(t *testing.T, item interface{}, expected map[string]interface{}) {
-	actual, err := ConvertToMap(item)
+func doTest(t *testing.T, tomapper stom.ToMapper, item interface{}, expected map[string]interface{}) {
+	actual, err := tomapper.ToMap(item)
 	if err != nil {
 		t.Fatalf("ToMap call returned error: %s", err.Error())
 	}

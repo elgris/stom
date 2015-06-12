@@ -1,10 +1,11 @@
-package stom
+package stom_test
 
 import (
 	"database/sql"
 	"testing"
 	"time"
 
+	"github.com/elgris/stom"
 	"github.com/go-sql-driver/mysql"
 )
 
@@ -48,9 +49,9 @@ func (this Metainfo) ToMap() (map[string]interface{}, error) {
 }
 
 func TestComplexItem_DefaultPolicy(t *testing.T) {
-	SetTag("db")
-	SetDefault("DEFAULT")
-	SetPolicy(PolicyUseDefault)
+	stom.SetTag("db")
+	stom.SetDefault("DEFAULT")
+	stom.SetPolicy(stom.PolicyUseDefault)
 
 	expected := map[string]interface{}{
 		"id":       1,
@@ -79,13 +80,13 @@ func TestComplexItem_DefaultPolicy(t *testing.T) {
 		},
 	}
 
-	doTest(t, getTestComplexItem(), expected)
+	doTest(t, stom.ToMapperFunc(stom.ConvertToMap), getTestComplexItem(), expected)
 }
 
 func TestComplexItem_ExcludePolicy(t *testing.T) {
-	SetTag("db")
-	SetDefault("DEFAULT")
-	SetPolicy(PolicyExclude)
+	stom.SetTag("db")
+	stom.SetDefault("DEFAULT")
+	stom.SetPolicy(stom.PolicyExclude)
 
 	expected := map[string]interface{}{
 		"id":       1,
@@ -111,7 +112,7 @@ func TestComplexItem_ExcludePolicy(t *testing.T) {
 		},
 	}
 
-	doTest(t, getTestComplexItem(), expected)
+	doTest(t, stom.ToMapperFunc(stom.ConvertToMap), getTestComplexItem(), expected)
 }
 
 func getTestComplexItem() ComplexItem {

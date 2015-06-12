@@ -2,25 +2,50 @@
 
 ## What is it?
 Little handy tool to convert your structures into `map[string]interface{}`. It works in 2 modes:
+
 1. General mode. It's when you use exported method `ToMap` to convert arbitrary struct instance to map.
 ```go
 import "github.com/elgris/stom"
 import "fmt"
 
+type SomeGrandparentStruct struct {
+    GrandparentID int `db:"grand_parent_id"`
+}
+
+type SomeParentStruct struct {
+    SomeGrandparentStruct
+    ParentID int `db:"parent_id"`
+}
+
+// Yes, SToM supports embedded structs.
 type SomeAwesomeStruct struct {
+    SomeParentStruct
     ID              int             `db:"id" custom_tag:"id"`
     Name            string          `db:"name"`
     Notes           string
 }
-
 func main() {
-    s := SomeAwesomeStruct{123, "myname", "mynote"}
-    var m map[string]interface{} = stom.ToMap(s)
+    s := SomeAwesomeStruct{
+        ID:    123,
+        Name:  "myname",
+        Notes: "mynote",
+    }
+    s.ParentID = 1123
+    s.GrandparentID = 11123
+
+    stom.SetTag("db")
+    m, _ :=  stom.ToMap(s)
     fmt.Printf("%+v", m)
+
     /* you will get map:
+
+        "grand_parent_id": 11123,
+        "parent_id": 1123,
         "id": 123,
         "name": "myname"
-    Field "Notes" is ignored as it has no tag
+
+    Field "Notes" is ignored as it has no tag.
+    All embedded structs are flattened into flat map.
     */
 }
 ```
@@ -37,13 +62,17 @@ type SomeAwesomeStruct struct {
 }
 
 func main() {
-    s := SomeAwesomeStruct{123, "myname", "mynote"}
+    s := SomeAwesomeStruct{
+        ID:    123,
+        Name:  "myname",
+        Notes: "mynote",
+    }
     converter := stom.MustNewStom(s) // at this point 's' is analyzed and tags 'id' and 'name' are cached for future use
 
     converter.SetTag("db")
 
     for i:= 0; i < 100500; i++ {
-        var m map[string]interface{} = converter.ToMap(s)
+        m, _ := converter.ToMap(s)
     }
 }
 ```
@@ -53,7 +82,6 @@ https://github.com/elgris/struct-to-map-conversion-benchmark
 
 ## TODO
 - (???) support filter plugins (???)
-- setup travis
 - generate godoc and put link to doc
 
 ## License
