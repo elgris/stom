@@ -148,7 +148,7 @@ func TestToMapper_CustomTag_DefaultPolicy(t *testing.T) {
 		map[string]interface{}{
 			"id":               1,
 			"num":              11,
-			"sum":              111,
+			"sum":              int32(111),
 			"created_time":     time.Unix(10000, 0),
 			"updated_time":     mysql.NullTime{time.Unix(11000, 0), true},
 			"is_reserved":      sql.NullBool{true, true},
@@ -158,7 +158,7 @@ func TestToMapper_CustomTag_DefaultPolicy(t *testing.T) {
 		map[string]interface{}{
 			"id":               2,
 			"num":              22,
-			"sum":              222,
+			"sum":              int32(222),
 			"created_time":     time.Unix(20000, 0),
 			"updated_time":     "SomeDefault",
 			"is_reserved":      "SomeDefault",
@@ -179,7 +179,7 @@ func TestCustomTag_DefaultPolicy(t *testing.T) {
 		map[string]interface{}{
 			"id":               1,
 			"num":              11,
-			"sum":              111,
+			"sum":              int32(111),
 			"created_time":     time.Unix(10000, 0),
 			"updated_time":     mysql.NullTime{time.Unix(11000, 0), true},
 			"is_reserved":      sql.NullBool{true, true},
@@ -189,7 +189,7 @@ func TestCustomTag_DefaultPolicy(t *testing.T) {
 		map[string]interface{}{
 			"id":               2,
 			"num":              22,
-			"sum":              222,
+			"sum":              int32(222),
 			"created_time":     time.Unix(20000, 0),
 			"updated_time":     "SomeDefault",
 			"is_reserved":      "SomeDefault",
