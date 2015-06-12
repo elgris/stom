@@ -1,9 +1,16 @@
 # SToM: Structure To Map converter (yet another one)
 
+```go
+go get "github.com/elgris/stom"
+```
+
+[![GoDoc](https://godoc.org/github.com/elgris/stom?status.png)](https://godoc.org/github.com/elgris/sqrl)
+[![Build Status](https://travis-ci.org/elgris/stom.png?branch=master)](https://travis-ci.org/elgris/sqrl)
+
 ## What is it?
 Little handy tool to convert your structures into `map[string]interface{}`. It works in 2 modes:
 
-1. General mode. It's when you use exported method `ToMap` to convert arbitrary struct instance to map.
+**General mode**. It's when you use exported method `ToMap` to convert arbitrary struct instance to map.
 ```go
 import "github.com/elgris/stom"
 import "fmt"
@@ -50,7 +57,7 @@ func main() {
 }
 ```
 
-2. "Individual" mode, when you create an instance of SToM for one specific type. In this mode all the tags are analyzed and cached before conversion, thus you can speed the whole process up if you need to convert repeatedly. It's very useful when you need to parse a lot of instances of the same struct.
+****"Individual" mode**, when you create an instance of SToM for one specific type. In this mode all the tags are analyzed and cached before conversion, thus you can speed the whole process up if you need to convert repeatedly. It's very useful when you need to parse a lot of instances of the same struct.
 ```go
 import "github.com/elgris/stom"
 import "fmt"
@@ -79,10 +86,6 @@ func main() {
 
 ## Benchmarks
 https://github.com/elgris/struct-to-map-conversion-benchmark
-
-## TODO
-- (???) support filter plugins (???)
-- generate godoc and put link to doc
 
 ## License
 MIT
