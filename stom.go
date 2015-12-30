@@ -1,4 +1,4 @@
-// package stom is about converting structs to map[string]interface{} with
+// Package stom is about converting structs to map[string]interface{} with
 // minimum processing and overhead
 package stom
 
@@ -30,6 +30,13 @@ var (
 	defaultValueSetting interface{}
 )
 
+// Zeroable is an interface that allows to filter values that can explicitly
+// state that they are 'zeroes'. For example, this interface allows to filter
+// zero time.Time,
+type Zeroable interface {
+	IsZero() bool
+}
+
 // ToMappable defines an entity that knows how to convert itself to map[string]interface{}.
 // If an entity implements this interface, SToM won't do any magic,
 // it will just call ToMap() method to makes thigs simpler.
@@ -47,8 +54,8 @@ type ToMapper interface {
 type ToMapperFunc func(s interface{}) (map[string]interface{}, error)
 
 // ToMap implements ToMapper
-func (this ToMapperFunc) ToMap(s interface{}) (map[string]interface{}, error) {
-	return this(s)
+func (f ToMapperFunc) ToMap(s interface{}) (map[string]interface{}, error) {
+	return f(s)
 }
 
 type tags struct {
@@ -93,40 +100,40 @@ func MustNewStom(s interface{}) *stom {
 }
 
 // SetTag sets SToM to scan for given tag in structure
-func (this *stom) SetTag(tag string) *stom {
-	this.tag = tag
-	this.cache = extractTagValues(this.typ, this.tag)
+func (s *stom) SetTag(tag string) *stom {
+	s.tag = tag
+	s.cache = extractTagValues(s.typ, s.tag)
 
-	return this
+	return s
 }
 
 // SetDefault makes SToM to put given default value in 'nil' values of structure's fields
-func (this *stom) SetDefault(defaultValue interface{}) *stom {
-	this.defaultValue = defaultValue
+func (s *stom) SetDefault(defaultValue interface{}) *stom {
+	s.defaultValue = defaultValue
 
-	return this
+	return s
 }
 
 // SetPolicy sets policy for 'nil' values
-func (this *stom) SetPolicy(policy Policy) *stom {
-	this.policy = policy
+func (s *stom) SetPolicy(policy Policy) *stom {
+	s.policy = policy
 
-	return this
+	return s
 }
 
 // ToMap converts a structure to map[string]interface{}.
 // SToM converts only structures it was initialized for
-func (this *stom) ToMap(s interface{}) (map[string]interface{}, error) {
+func (s *stom) ToMap(s interface{}) (map[string]interface{}, error) {
 	typ, err := getStructType(s)
 	if err != nil {
 		return nil, err
 	}
 
-	if typ != this.typ {
-		return nil, fmt.Errorf("stom is set up to work with type %s, but %s given", this.typ, typ)
+	if typ != s.typ {
+		return nil, fmt.Errorf("stom is set up to work with type %s, but %s given", s.typ, typ)
 	}
 
-	return toMap(s, this.cache, this.defaultValue, this.policy)
+	return toMap(s, s.cache, s.defaultValue, s.policy)
 }
 
 // SetTag sets package setting for tag to look for in incoming structures
@@ -256,17 +263,17 @@ func filterValue(vField reflect.Value) (v interface{}, err error) {
 	} else {
 		v = vField.Interface()
 	}
-
 	switch t := v.(type) {
 	case driver.Valuer: // support for NullTypes like sql.NullString and so on
 		if converted, convErr := t.Value(); convErr != nil || converted == nil {
 			v = nil
 		}
-		return
-
+	case Zeroable:
+		if t.IsZero() {
+			v = nil
+		}
 	case ToMappable:
 		v, err = t.ToMap()
-		return
 	}
 
 	return v, nil

@@ -60,6 +60,19 @@ func TestDefaultPolicy_DefaultValue(t *testing.T) {
 			"rating":   "DEFAULT",
 			"visible":  false,
 		},
+		map[string]interface{}{
+			"id":       3,
+			"name":     "item_3",
+			"number":   33,
+			"created":  "DEFAULT",
+			"updated":  "DEFAULT",
+			"discount": "DEFAULT",
+			"price":    3333.0,
+			"reserved": "DEFAULT",
+			"points":   "DEFAULT",
+			"rating":   "DEFAULT",
+			"visible":  false,
+		},
 	}
 
 	doTestItems(t, stom.ToMapperFunc(stom.ConvertToMap), getTestItems(), expecteds)
@@ -97,6 +110,19 @@ func TestDefaultPolicy_NilValue(t *testing.T) {
 			"rating":   nil,
 			"visible":  false,
 		},
+		map[string]interface{}{
+			"id":       3,
+			"name":     "item_3",
+			"number":   33,
+			"created":  nil,
+			"updated":  nil,
+			"discount": nil,
+			"price":    3333.0,
+			"reserved": nil,
+			"points":   nil,
+			"rating":   nil,
+			"visible":  false,
+		},
 	}
 
 	doTestItems(t, stom.ToMapperFunc(stom.ConvertToMap), getTestItems(), expecteds)
@@ -127,6 +153,13 @@ func TestExcludePolicy(t *testing.T) {
 			"number":  22,
 			"created": time.Unix(20000, 0),
 			"price":   2222.0,
+			"visible": false,
+		},
+		map[string]interface{}{
+			"id":      3,
+			"name":    "item_3",
+			"number":  33,
+			"price":   3333.0,
 			"visible": false,
 		},
 	}
@@ -165,6 +198,16 @@ func TestToMapper_CustomTag_DefaultPolicy(t *testing.T) {
 			"visible":          false,
 			"i_ignore_nothing": 20,
 		},
+		map[string]interface{}{
+			"id":               3,
+			"num":              33,
+			"sum":              int32(333),
+			"created_time":     "SomeDefault",
+			"updated_time":     "SomeDefault",
+			"is_reserved":      "SomeDefault",
+			"visible":          false,
+			"i_ignore_nothing": 30,
+		},
 	}
 
 	doTestItems(t, tomapper, getTestItems(), expecteds)
@@ -195,6 +238,16 @@ func TestCustomTag_DefaultPolicy(t *testing.T) {
 			"is_reserved":      "SomeDefault",
 			"visible":          false,
 			"i_ignore_nothing": 20,
+		},
+		map[string]interface{}{
+			"id":               3,
+			"num":              33,
+			"sum":              int32(333),
+			"created_time":     "SomeDefault",
+			"updated_time":     "SomeDefault",
+			"is_reserved":      "SomeDefault",
+			"visible":          false,
+			"i_ignore_nothing": 30,
 		},
 	}
 
@@ -273,6 +326,20 @@ func getTestItems() []SomeItem {
 			IsVisible:       false,
 			Notes:           "bar",
 			SomeIgnoreField: 20,
+		},
+		SomeItem{
+			ID:              3,
+			Name:            "item_3",
+			Number:          33,
+			Checksum:        333,
+			Price:           3333.0,
+			Discount:        nil,
+			IsReserved:      sql.NullBool{true, false},
+			Points:          sql.NullInt64{int64(0), false},
+			Rating:          sql.NullFloat64{3.0, false},
+			IsVisible:       false,
+			Notes:           "bar",
+			SomeIgnoreField: 30,
 		},
 	}
 }
