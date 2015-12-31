@@ -123,8 +123,8 @@ func (s *stom) SetPolicy(policy Policy) *stom {
 
 // ToMap converts a structure to map[string]interface{}.
 // SToM converts only structures it was initialized for
-func (s *stom) ToMap(s interface{}) (map[string]interface{}, error) {
-	typ, err := getStructType(s)
+func (s *stom) ToMap(obj interface{}) (map[string]interface{}, error) {
+	typ, err := getStructType(obj)
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +133,7 @@ func (s *stom) ToMap(s interface{}) (map[string]interface{}, error) {
 		return nil, fmt.Errorf("stom is set up to work with type %s, but %s given", s.typ, typ)
 	}
 
-	return toMap(s, s.cache, s.defaultValue, s.policy)
+	return toMap(obj, s.cache, s.defaultValue, s.policy)
 }
 
 // SetTag sets package setting for tag to look for in incoming structures
@@ -211,8 +211,8 @@ func extractTagValues(typ reflect.Type, tag string) tags {
 	return tagValues
 }
 
-func toMap(s interface{}, tagmap tags, defaultValue interface{}, policy Policy) (map[string]interface{}, error) {
-	val := reflect.ValueOf(s)
+func toMap(obj interface{}, tagmap tags, defaultValue interface{}, policy Policy) (map[string]interface{}, error) {
+	val := reflect.ValueOf(obj)
 
 	if val.Kind() == reflect.Ptr {
 		val = val.Elem()
