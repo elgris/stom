@@ -48,6 +48,44 @@ func (this Metainfo) ToMap() (map[string]interface{}, error) {
 	}, nil
 }
 
+func TestComplexItem_TagValues(t *testing.T) {
+	s := stom.MustNewStom(ComplexItem{}).SetTag("db")
+
+	expectedTagValues := map[string]interface{}{
+		"id":       nil,
+		"name":     nil,
+		"number":   nil,
+		"created":  nil,
+		"updated":  nil,
+		"discount": nil,
+		"price":    nil,
+		"reserved": nil,
+		"points":   nil,
+		"rating":   nil,
+		"visible":  nil,
+
+		"base":         nil,
+		"basic_posted": nil,
+
+		"author": nil,
+		"meta":   nil,
+	}
+
+	tagValues := s.TagValues()
+
+	if len(expectedTagValues) != len(tagValues) {
+		t.Fatalf("number of expected tag values %d does not match number of actual tag values %d",
+			len(expectedTagValues),
+			len(tagValues))
+	}
+
+	for _, v := range tagValues {
+		if _, ok := expectedTagValues[v]; !ok {
+			t.Fatalf("could not find tag value %s in list of expected tagValues", v)
+		}
+	}
+}
+
 func TestComplexItem_DefaultPolicy(t *testing.T) {
 	stom.SetTag("db")
 	stom.SetDefault("DEFAULT")

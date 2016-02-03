@@ -28,6 +28,35 @@ type SomeItem struct {
 	Notes           string
 }
 
+func TestSimpleItem_TagValues(t *testing.T) {
+	s := stom.MustNewStom(SomeItem{}).SetTag("custom_tag")
+
+	expectedTagValues := map[string]interface{}{
+		"id":               nil,
+		"num":              nil,
+		"sum":              nil,
+		"created_time":     nil,
+		"updated_time":     nil,
+		"is_reserved":      nil,
+		"visible":          nil,
+		"i_ignore_nothing": nil,
+	}
+
+	tagValues := s.TagValues()
+
+	if len(expectedTagValues) != len(tagValues) {
+		t.Fatalf("number of expected tag values %d does not match number of actual tag values %d",
+			len(expectedTagValues),
+			len(tagValues))
+	}
+
+	for _, v := range tagValues {
+		if _, ok := expectedTagValues[v]; !ok {
+			t.Fatalf("could not find tag value %s in list of expected tagValues", v)
+		}
+	}
+}
+
 func TestDefaultPolicy_DefaultValue(t *testing.T) {
 	stom.SetTag("db")
 	stom.SetDefault("DEFAULT")

@@ -63,6 +63,27 @@ type tags struct {
 	Nested map[int]tags
 }
 
+func (t tags) TagsList() []string {
+	tagsList := []string{}
+	tagsMap := map[string]interface{}{}
+	for _, tagName := range t.Simple {
+		tagsMap[tagName] = nil
+	}
+
+	for _, nestedTags := range t.Nested {
+		nestedTagsList := nestedTags.TagsList()
+		for _, tagName := range nestedTagsList {
+			tagsMap[tagName] = nil
+		}
+	}
+
+	for tagName := range tagsMap {
+		tagsList = append(tagsList, tagName)
+	}
+
+	return tagsList
+}
+
 func newTags() tags {
 	return tags{
 		Simple: make(map[int]string),
@@ -77,8 +98,9 @@ type stom struct {
 	policy       Policy
 	tag          string
 
-	typ   reflect.Type
-	cache tags
+	typ       reflect.Type
+	cache     tags
+	tagValues []string
 }
 
 // MustNewStom creates new instance of a SToM converter for type of given structure.
@@ -103,6 +125,7 @@ func MustNewStom(s interface{}) *stom {
 func (s *stom) SetTag(tag string) *stom {
 	s.tag = tag
 	s.cache = extractTagValues(s.typ, s.tag)
+	s.tagValues = s.cache.TagsList()
 
 	return s
 }
@@ -119,6 +142,12 @@ func (s *stom) SetPolicy(policy Policy) *stom {
 	s.policy = policy
 
 	return s
+}
+
+// TagValues returns list of cached tag values that were processed by SToM
+// Note that these tag values do not include tag values of nested structures
+func (s *stom) TagValues() []string {
+	return s.tagValues
 }
 
 // ToMap converts a structure to map[string]interface{}.
